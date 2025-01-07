@@ -99,7 +99,7 @@ docker run --rm -it \
     --cap-add BPF \
     --cap-add PERFMON \
     --cap-add SYS_ADMIN \
-    charlie0129/killsnoop:v0.1.1-debian-12-kernel-6.1 -root /host
+    charlie0129/killsnoop:v0.2.0-debian-12-kernel-6.1 --root /host
 ```
 
 - `/proc`: finding process tree and detailed info

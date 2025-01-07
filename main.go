@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"flag"
 	"log"
 	"log/slog"
 	"math"
@@ -20,6 +19,7 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -27,8 +27,11 @@ var (
 	logLevelStr           = "info"
 	maxParentDepth        = 8
 	maxListProcessThreads = runtime.GOMAXPROCS(0)
-	ignoreSourceComm      = stringArray{}
 	root                  = "/"
+
+	excludeSourceComms = []string{}
+	excludeSignals     = []int64{}
+	includeSignals     = []int64{}
 
 	logLevel slog.Level
 	maxPid   = int64(math.MaxInt32)
@@ -43,13 +46,15 @@ func init() {
 }
 
 func main() {
-	flag.IntVar(&listProcessInterval, "listProcessInterval", listProcessInterval, "List existing process interval (for finding terminated processes)")
-	flag.StringVar(&logLevelStr, "logLevel", logLevelStr, "Log Level: debug, info, warn, and error")
-	flag.IntVar(&maxParentDepth, "maxParentDepth", maxParentDepth, "Max process tree depth")
-	flag.IntVar(&maxListProcessThreads, "maxListProcessThreads", maxListProcessThreads, "Max threads to get current processes")
-	flag.StringVar(&root, "root", root, "The root location")
-	flag.Var(&ignoreSourceComm, "ignoreSourceComm", "Ignore source comm (binary name), can be specified multiple times")
-	flag.Parse()
+	pflag.IntVar(&listProcessInterval, "list-process-interval", listProcessInterval, "List existing process interval for finding terminated processes")
+	pflag.StringVarP(&logLevelStr, "log-level", "l", logLevelStr, "Log Level: debug, info, warn, and error")
+	pflag.IntVarP(&maxParentDepth, "max-tree-depth", "d", maxParentDepth, "Max process tree depth")
+	pflag.IntVar(&maxListProcessThreads, "max-list-process-threads", maxListProcessThreads, "Max threads to get current processes")
+	pflag.StringVarP(&root, "root", "r", root, "The rootfs location to find proc")
+	pflag.StringSliceVar(&excludeSourceComms, "ignore-source-comm", excludeSourceComms, "Ignore source comm (binary name), comma separated list or specified multiple times")
+	pflag.Int64SliceVarP(&excludeSignals, "exclude-signals", "e", excludeSignals, "Exclude these signals, comma separated list or specified multiple times")
+	pflag.Int64SliceVarP(&includeSignals, "include-signals", "i", excludeSignals, "Include these signals, comma separated list or specified multiple times")
+	pflag.Parse()
 
 	err := logLevel.UnmarshalText([]byte(logLevelStr))
 	if err != nil {
@@ -126,6 +131,16 @@ func main() {
 			continue
 		}
 
+		if len(excludeSignals) != 0 && slices.Contains(excludeSignals, event.Signal) {
+			slog.Debug("ignored", "signal", event.Signal)
+			continue
+		}
+
+		if len(excludeSignals) != 0 && !slices.Contains(includeSignals, event.Signal) {
+			slog.Debug("ignored", "signal", event.Signal)
+			continue
+		}
+
 		// Transform some strings.
 		var sourceComm strings.Builder
 		for i := 0; i < len(event.SourceComm); i++ {
@@ -133,8 +148,9 @@ func main() {
 				sourceComm.WriteByte(byte(event.SourceComm[i]))
 			}
 		}
+
 		// Ignore certain comm (if specified).
-		if slices.Contains(ignoreSourceComm, sourceComm.String()) {
+		if slices.Contains(excludeSourceComms, sourceComm.String()) {
 			slog.Debug("ignored", "source.comm", sourceComm.String())
 			continue
 		}
@@ -151,7 +167,7 @@ func main() {
 			sigstr = syscall.Signal(event.Signal).String()
 		}
 
-		log := slog.With("signal", event.Signal, "signalString", sigstr)
+		log := slog.With("signal", event.Signal, slog.Group("signal", "string", sigstr))
 		// We have received process info from kernel space, use this instead of cached one.
 		processCache.Insert(&Process{
 			PID:     event.SourcePid,
