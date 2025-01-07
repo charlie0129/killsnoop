@@ -1,0 +1,5 @@
+.DS_Store
+bpf_*.o
+bpf_*.go
+killsnoop
+vmlinux.h
