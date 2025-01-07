@@ -13,7 +13,7 @@ char __license[] SEC("license") = "GPL";
 #endif
 
 // The max size of the bpf ring buffer.
-#define RINGBUF_SIZE 1 << 16
+#define RINGBUF_SIZE 1 << 24
 
 // Max task cmdline size.
 #define ARG_MAX_SIZE 256
@@ -30,7 +30,7 @@ struct event {
 // Ring buffer to be read by the userspace program.
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 1 << 24);
+    __uint(max_entries, RINGBUF_SIZE);
     __type(value, struct event);
 } events SEC(".maps");
 
