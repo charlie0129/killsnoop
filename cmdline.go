@@ -94,10 +94,10 @@ func listProcesses(maxpid int64) map[int64]*Process {
 	// Let them go!
 	wg := sync.WaitGroup{}
 	wg.Add(len(perGoroutinePids))
-	for _, pids := range perGoroutinePids {
+	for _, gPids := range perGoroutinePids {
 		go func() {
 			defer wg.Done()
-			for _, pid := range pids {
+			for _, pid := range gPids {
 				getProcess(pid)
 			}
 		}()

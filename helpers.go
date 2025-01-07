@@ -9,13 +9,25 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 func cmdlineConv(in []byte) []string {
 	var ret []string
-	for _, a := range bytes.Split(in, []byte{0x0}) {
-		if len(a) != 0 {
-			ret = append(ret, string(a))
+	for _, arg := range bytes.Split(in, []byte{0x0}) {
+		if len(arg) != 0 {
+			// Must contain printable characters.
+			valid := true
+			for _, a := range arg {
+				if !unicode.IsPrint(rune(a)) {
+					valid = false
+				}
+			}
+			if !valid {
+				break
+			}
+
+			ret = append(ret, string(arg))
 		}
 	}
 	return ret

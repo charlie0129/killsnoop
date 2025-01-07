@@ -91,6 +91,14 @@ int tp_enter_kill(struct kill_params* params)
         return 0;
     }
 
+    // Reset in case ringbuffer wraps.
+    e->source_ppid = 0;
+    e->source_pid = 0;
+    e->signal = 0;
+    e->target_pid = 0;
+    __builtin_memset(e->source_cmdline, (__s8)0, ARG_MAX_SIZE);
+    __builtin_memset(e->source_comm, (__s8)0, TASK_COMM_LEN);
+
     e->source_ppid = (pid_t)BPF_CORE_READ(parent_task, pid);
     // cmdline str is in userspace. We need to copy it our bpf program.
     bpf_probe_read_user_str(e->source_cmdline, max_size, arg_start);
