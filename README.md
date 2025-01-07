@@ -18,7 +18,7 @@ Log output is in `logfmt` so you can easily parse it with log parsers. Here is s
 level=INFO
 msg="snooped signal"
 signal=15                 # <-- What signal?
-signalString=terminated
+signal.string=terminated
 source.pid=1646437        # <-- Who sent this signal?
 source.cmdline=[runc]     # <-- Who sent this signal?
 source.comm=runc          # <-- Who sent this signal?
@@ -46,7 +46,7 @@ the output will be:
 level=INFO
 msg="snooped signal"
 signal=15                 # <-- What signal?
-signalString=terminated
+signal.string=terminated
 source.pid=1657512        # <-- Who sent this signal?
 source.cmdline=[pkill]    # <-- Who sent this signal?
 source.comm=pkill         # <-- Who sent this signal?
