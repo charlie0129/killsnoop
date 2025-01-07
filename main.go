@@ -136,7 +136,7 @@ func main() {
 			continue
 		}
 
-		if len(excludeSignals) != 0 && !slices.Contains(includeSignals, event.Signal) {
+		if len(includeSignals) != 0 && !slices.Contains(includeSignals, event.Signal) {
 			slog.Debug("ignored", "signal", event.Signal)
 			continue
 		}
