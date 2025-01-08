@@ -12,7 +12,12 @@ A killsnoop is a tool that monitors the system for kill signals and logs the pro
 
 ## Sample output
 
-Log output is in `logfmt` so you can easily parse it with log parsers. Here is some sample output (newlines added for readability):
+Log output is in `logfmt` so you can easily parse it with log parsers. For example, if you are using LogQL:
+
+- find all SIGTERM: `{app="killsnoop"} | logfmt --strict | signal = "15"`
+- find who killed PID 1234: `{app="killsnoop"} | logfmt --strict | target_pid = "1234"`
+
+Here is some sample output (newlines added for readability):
 
 ```
 level=INFO
@@ -68,7 +73,7 @@ target.parent.comm=zsh
 > [!NOTE]
 > Ideally, the build machine should be on the same kernel (same version, same kconfig) as the target machine because this program relies on certain kernel structs (task_struct, mm_struct, and etc.), which are prone to change in different kernels. However, if it is working as expected, you can ignore this.
 
-Aside from `golang`, install these dependencies (to build BTF):
+Aside from `golang`, install these dependencies (to build BPF binary):
 
 ```
 # On Debian/Ubuntu:
@@ -99,7 +104,7 @@ docker run --rm -it \
     --cap-add BPF \
     --cap-add PERFMON \
     --cap-add SYS_ADMIN \
-    charlie0129/killsnoop:v0.2.0-debian-12-kernel-6.1 --root /host
+    charlie0129/killsnoop:v0.2.1-debian-12-kernel-6.1 --root /host
 ```
 
 - `/proc`: finding process tree and detailed info
