@@ -94,6 +94,8 @@ make
 
 ## Running in containers
 
+### Docker
+
 Necessary volumes and permissions must be given:
 
 ```
@@ -113,3 +115,78 @@ docker run --rm -it \
 - `CAP_BPF`: employ privileged BPF operations
 - `CAP_PERFMON`: load tracing programs
 - `CAP_SYS_ADMIN`: iterate system wide loaded programs, maps, links, BTFs
+
+### Kubernetes DaemonSet
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: killsnoop
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      name: killsnoop
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+  template:
+    metadata:
+      labels:
+        name: killsnoop
+    spec:
+      volumes:
+        - name: bpf-maps
+          hostPath:
+            path: /sys/fs/bpf
+            type: DirectoryOrCreate
+        - name: proc
+          hostPath:
+            path: /proc
+            type: Directory
+        - name: tracing
+          hostPath:
+            path: /sys/kernel/tracing
+            type: DirectoryOrCreate
+      securityContext: {}
+      restartPolicy: Always
+      containers:
+        - name: killsnoop
+          image: charlie0129/killsnoop:v0.2.1-debian-12-kernel-6.1
+          securityContext:
+            # Required for killsnoop to work (eBPF and tracepoints)
+            capabilities:
+              add:
+                - BPF
+                - SYS_ADMIN
+                - PERFMON
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 2000m
+              memory: 1Gi
+          command:
+            - "/killsnoop"
+            - "--root=/host"
+            - "--log-level=info"
+            - "--exclude-signals=17" # SIGCHLD
+            - "--exclude-signals=18" # SIGCONT
+            - "--exclude-signals=23" # SIGURG
+            - "--exclude-signals=28" # SIGWINCH
+          volumeMounts:
+            - name: tracing
+              mountPath: /sys/kernel/tracing
+              readOnly: false
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: bpf-maps
+              mountPath: /sys/fs/bpf
+              readOnly: false
+```
