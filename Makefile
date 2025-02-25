@@ -11,7 +11,7 @@ bpf_bpfel.go: vmlinux.h main.bpf.c
 
 .PHONY: killsnoop
 killsnoop: bpf_bpfel.go
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build \
+	CGO_ENABLED=0 GOOS=linux go build \
 		-asmflags="all=-trimpath=$$(pwd)" \
 		-gcflags="all=-trimpath=$$(pwd)" \
 		-ldflags="-s -w" \
